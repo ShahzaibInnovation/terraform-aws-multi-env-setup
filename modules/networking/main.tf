@@ -1,9 +1,3 @@
-
-## Module: Networking (Simplified for Dev/Staging)
-
-### `modules/networking/main.tf` (Simplified Version)
-
-```hcl
 # VPC
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
