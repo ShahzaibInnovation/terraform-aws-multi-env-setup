@@ -1,6 +1,6 @@
 terraform {
   required_version = ">= 1.0"
-  
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -31,18 +31,18 @@ module "networking" {
 module "ec2" {
   source = "../../modules/ec2"
 
-  environment          = var.environment
-  instance_name        = var.instance_name
-  ami_id               = var.ami_id
-  instance_type        = var.instance_type
-  vpc_id               = module.networking.vpc_id
-  subnet_id            = module.networking.public_subnet_ids[0]
-  associate_public_ip  = true
-  key_name             = var.key_name
-  allow_ssh            = var.allow_ssh
-  allow_http           = true
-  allowed_ssh_cidrs    = var.allowed_ssh_cidrs
-  root_volume_size     = 20
+  environment         = var.environment
+  instance_name       = var.instance_name
+  ami_id              = var.ami_id
+  instance_type       = var.instance_type
+  vpc_id              = module.networking.vpc_id
+  subnet_id           = module.networking.public_subnet_ids[0]
+  associate_public_ip = true
+  key_name            = var.key_name
+  allow_ssh           = var.allow_ssh
+  allow_http          = true
+  allowed_ssh_cidrs   = var.allowed_ssh_cidrs
+  root_volume_size    = 20
 
   user_data = <<-EOF
     #!/bin/bash
