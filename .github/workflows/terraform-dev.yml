@@ -1,0 +1,107 @@
+name: 'Terraform - Development'
+
+on:
+  push:
+    branches:
+      - dev
+      - feature/*
+    paths:
+      - 'environments/dev/**'
+      - 'modules/**'
+      - '.github/workflows/terraform-dev.yml'
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - 'environments/dev/**'
+      - 'modules/**'
+
+env:
+  TF_VERSION: '1.5.7'
+  WORKING_DIR: './environments/dev'
+  ENVIRONMENT: 'dev'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  terraform:
+    name: 'Validate & Deploy Dev'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Terraform Init
+        id: init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET_DEV }}" \
+            -backend-config="key=dev/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE_DEV }}" \
+            -backend-config="encrypt=true"
+      
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
+      
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+      
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -no-color -input=false -var-file="terraform.tfvars" -out=tfplan
+        continue-on-error: true
+      
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-tfplan
+          path: ${{ env.WORKING_DIR }}/tfplan
+          retention-days: 3
+      
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('${{ env.WORKING_DIR }}/tfplan', 'utf8');
+            const body = `## Terraform Plan Output\n\`\`\`hcl\n${plan.substring(0, 5000)}\n\`\`\`\n\n_Plan file available for download_`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+      
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        run: terraform apply -auto-approve tfplan
+      
+      - name: Output Summary
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        run: |
+          echo "## Dev Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** Deployed Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Instance IP:** $(terraform output -raw instance_public_ip 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
