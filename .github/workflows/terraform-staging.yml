@@ -1,4 +1,4 @@
-name: '🚀 Terraform - Staging'
+name: ' Terraform - Staging'
 
 on:
   push:
@@ -28,7 +28,7 @@ env:
 
 jobs:
   terraform-plan:
-    name: '🔍 Plan Staging Deployment'
+    name: ' Plan Staging Deployment'
     runs-on: ubuntu-latest
     outputs:
       issue_number: ${{ steps.create_issue.outputs.issue_number }}
@@ -37,15 +37,15 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
     
     steps:
-      - name: 📥 Checkout Code
+      - name:  Checkout Code
         uses: actions/checkout@v4
       
-      - name: 🔧 Setup Terraform
+      - name:  Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
       
-      - name: 🔐 Configure AWS Credentials
+      - name:  Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -60,7 +60,7 @@ jobs:
           key_name    = null
           EOF
       
-      - name: 📦 Terraform Init
+      - name:  Terraform Init
         run: |
           terraform init \
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET_STAGING }}" \
@@ -69,32 +69,32 @@ jobs:
             -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE_STAGING }}" \
             -backend-config="encrypt=true"
       
-      - name: ✅ Terraform Validate
+      - name:  Terraform Validate
         run: terraform validate
       
-      - name: 📊 Terraform Plan
+      - name:  Terraform Plan
         id: plan
         run: |
           terraform plan -no-color -input=false -var-file="terraform.tfvars" -out=tfplan
       
-      - name: 📤 Upload Plan Artifact
+      - name:  Upload Plan Artifact
         uses: actions/upload-artifact@v4
         with:
           name: staging-tfplan
           path: ${{ env.WORKING_DIR }}/tfplan
           retention-days: 3
       
-      - name: 📝 Save Plan Output
+      - name:  Save Plan Output
         run: terraform show -no-color tfplan > plan_output.txt
       
-      - name: 📤 Upload Plan Output
+      - name:  Upload Plan Output
         uses: actions/upload-artifact@v4
         with:
           name: staging-plan-output
           path: ${{ env.WORKING_DIR }}/plan_output.txt
           retention-days: 3
       
-      - name: 💬 Create Approval Issue
+      - name:  Create Approval Issue
         id: create_issue
         if: github.event_name == 'push'
         uses: actions/github-script@v7
@@ -104,23 +104,23 @@ jobs:
             const planOutput = fs.readFileSync('${{ env.WORKING_DIR }}/plan_output.txt', 'utf8');
             
             const issueBody = `
-            ## 🚨 Staging Deployment Requires Approval
+            ##  Staging Deployment Requires Approval
             
             **Environment:** Staging
             **Branch:** ${{ github.ref_name }}
             **Triggered by:** ${{ github.actor }}
             **Reason:** ${{ github.event.inputs.reason || 'Push to staging branch' }}
             
-            ### 📋 Terraform Plan Summary
+            ###  Terraform Plan Summary
             
             \`\`\`hcl
             ${planOutput.substring(0, 3000)}
             \`\`\`
             
-            ### ✅ To Approve
+            ###  To Approve
             **Comment \`/approve\` on this issue** to proceed with deployment.
             
-            ### ❌ To Cancel
+            ### To Cancel
             Close this issue or comment \`/cancel\` to cancel deployment.
             
             _Note: You're approving your own deployment (single-user mode)_
@@ -134,10 +134,10 @@ jobs:
               labels: ['deployment', 'staging', 'needs-approval']
             });
             
-            console.log(`✅ Created approval issue #${issue.data.number}`);
+            console.log(` Created approval issue #${issue.data.number}`);
             return issue.data.number;
       
-      - name: ⏳ Wait for Approval
+      - name:  Wait for Approval
         if: github.event_name == 'push'
         uses: actions/github-script@v7
         with:
@@ -147,7 +147,7 @@ jobs:
             let timeout = 60; // 60 minutes timeout
             let checked = 0;
             
-            console.log(`⏳ Waiting for approval on issue #${issueNumber}...`);
+            console.log(` Waiting for approval on issue #${issueNumber}...`);
             
             while (!approved && checked < timeout) {
               await new Promise(r => setTimeout(r, 60000)); // Wait 1 minute
@@ -162,16 +162,16 @@ jobs:
               for (const comment of comments.data) {
                 if (comment.body.includes('/approve')) {
                   approved = true;
-                  console.log(`✅ Deployment approved by: ${comment.user.login}`);
+                  console.log(` Deployment approved by: ${comment.user.login}`);
                   break;
                 }
                 if (comment.body.includes('/cancel')) {
-                  console.log('❌ Deployment cancelled');
+                  console.log(' Deployment cancelled');
                   process.exit(0);
                 }
               }
               
-              console.log(`⏳ Waiting for approval... (${checked}/${timeout} minutes)`);
+              console.log(` Waiting for approval... (${checked}/${timeout} minutes)`);
             }
             
             if (!approved) {
@@ -179,7 +179,7 @@ jobs:
             }
 
   terraform-apply:
-    name: '🚀 Apply Staging Deployment'
+    name: ' Apply Staging Deployment'
     runs-on: ubuntu-latest
     needs: terraform-plan
     if: success()
@@ -188,15 +188,15 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
     
     steps:
-      - name: 📥 Checkout Code
+      - name:  Checkout Code
         uses: actions/checkout@v4
       
-      - name: 🔧 Setup Terraform
+      - name:  Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
       
-      - name: 🔐 Configure AWS Credentials
+      - name:  Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -211,13 +211,13 @@ jobs:
           key_name    = null
           EOF
       
-      - name: 📥 Download Plan Artifact
+      - name:  Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
           name: staging-tfplan
           path: ${{ env.WORKING_DIR }}
       
-      - name: 📦 Terraform Init
+      - name:  Terraform Init
         run: |
           terraform init \
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET_STAGING }}" \
@@ -226,10 +226,10 @@ jobs:
             -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE_STAGING }}" \
             -backend-config="encrypt=true"
       
-      - name: 🚀 Terraform Apply
+      - name:  Terraform Apply
         run: terraform apply -auto-approve tfplan
       
-      - name: 🧪 Post-Deployment Health Check
+      - name:  Post-Deployment Health Check
         run: |
           echo "Waiting 60 seconds for services to start..."
           sleep 60
@@ -239,9 +239,9 @@ jobs:
             curl -f http://$PUBLIC_IP || echo "Health check warning"
           fi
       
-      - name: 📝 Output Summary
+      - name:  Output Summary
         run: |
-          echo "## ✅ Staging Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "##  Staging Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment:** Staging" >> $GITHUB_STEP_SUMMARY
           echo "- **Status:** Deployed Successfully" >> $GITHUB_STEP_SUMMARY
           echo "- **Time:** $(date)" >> $GITHUB_STEP_SUMMARY
