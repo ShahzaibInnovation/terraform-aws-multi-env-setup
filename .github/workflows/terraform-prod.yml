@@ -1,4 +1,4 @@
-name: '🚀 Terraform - Production'
+name: ' Terraform - Production'
 
 on:
   push:
@@ -30,7 +30,7 @@ env:
 
 jobs:
   terraform-plan:
-    name: '📋 Plan Production Deployment'
+    name: ' Plan Production Deployment'
     runs-on: ubuntu-latest
     outputs:
       issue_number: ${{ steps.create_issue.outputs.result }}
@@ -39,22 +39,22 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
     
     steps:
-      - name: 📥 Checkout Code
+      - name:  Checkout Code
         uses: actions/checkout@v4
       
-      - name: 🔧 Setup Terraform
+      - name:  Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
       
-      - name: 🔐 Configure AWS Credentials
+      - name:  Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       
-      - name: 📦 Terraform Init
+      - name:  Terraform Init
         run: |
           terraform init \
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET_PROD }}" \
@@ -63,30 +63,30 @@ jobs:
             -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE_PROD }}" \
             -backend-config="encrypt=true"
       
-      - name: ✅ Terraform Validate
+      - name:  Terraform Validate
         run: terraform validate
       
-      - name: 📊 Terraform Plan
+      - name:  Terraform Plan
         id: plan
         run: |
           terraform plan -no-color -input=false -var-file="terraform.tfvars" -out=tfplan
           terraform show -no-color tfplan > plan_output.txt
       
-      - name: 📤 Upload Plan Artifact
+      - name:  Upload Plan Artifact
         uses: actions/upload-artifact@v4
         with:
           name: prod-tfplan
           path: ${{ env.WORKING_DIR }}/tfplan
           retention-days: 7
       
-      - name: 📤 Upload Plan Output
+      - name:  Upload Plan Output
         uses: actions/upload-artifact@v4
         with:
           name: prod-plan-output
           path: ${{ env.WORKING_DIR }}/plan_output.txt
           retention-days: 7
       
-      - name: 💬 Create Production Approval Issue
+      - name:  Create Production Approval Issue
         id: create_issue
         uses: actions/github-script@v7
         with:
@@ -95,28 +95,28 @@ jobs:
             const plan = fs.readFileSync('${{ env.WORKING_DIR }}/plan_output.txt', 'utf8');
             
             const issueBody = `
-            ## 🚨 PRODUCTION DEPLOYMENT REQUIRES YOUR APPROVAL
+            ## PRODUCTION DEPLOYMENT REQUIRES YOUR APPROVAL
             
-            ### ⚠️ WARNING: This is PRODUCTION Environment
+            ###  WARNING: This is PRODUCTION Environment
             
             **Environment:** Production
             **Branch:** ${{ github.ref_name }}
             **Triggered by:** ${{ github.actor }}
             **Reason:** ${{ github.event.inputs.reason || 'Push to main branch' }}
             
-            ### 📋 Terraform Plan Summary
+            ###  Terraform Plan Summary
             
             \`\`\`hcl
             ${plan.substring(0, 4000)}
             \`\`\`
             
-            ### 📊 Changes Summary
+            ###  Changes Summary
             ${plan.match(/Plan:.*/g)?.join('\n') || 'No changes detected'}
             
-            ### ✅ To Approve and Deploy
+            ###  To Approve and Deploy
             **Comment \`/approve-prod\` on this issue**
             
-            ### ❌ To Cancel
+            ###  To Cancel
             Close this issue or comment \`/cancel-prod\`
             
             ---
@@ -132,10 +132,10 @@ jobs:
               labels: ['production', 'deployment', 'needs-approval']
             });
             
-            console.log(`✅ Created approval issue #${issue.data.number}`);
+            console.log(` Created approval issue #${issue.data.number}`);
             return issue.data.number;
       
-      - name: ⏳ Wait for Approval
+      - name:  Wait for Approval
         uses: actions/github-script@v7
         with:
           script: |
@@ -144,7 +144,7 @@ jobs:
             let timeout = 120;
             let checked = 0;
             
-            console.log(`⏳ Waiting for production approval on issue #${issueNumber}...`);
+            console.log(` Waiting for production approval on issue #${issueNumber}...`);
             
             while (!approved && checked < timeout) {
               await new Promise(r => setTimeout(r, 60000));
@@ -159,16 +159,16 @@ jobs:
               for (const comment of comments.data) {
                 if (comment.body.includes('/approve-prod')) {
                   approved = true;
-                  console.log(`✅ Deployment approved by: ${comment.user.login}`);
+                  console.log(` Deployment approved by: ${comment.user.login}`);
                   break;
                 }
                 if (comment.body.includes('/cancel-prod')) {
-                  console.log('❌ Deployment cancelled');
+                  console.log(' Deployment cancelled');
                   process.exit(0);
                 }
               }
               
-              console.log(`⏳ Waiting for approval... (${checked}/${timeout} minutes)`);
+              console.log(` Waiting for approval... (${checked}/${timeout} minutes)`);
             }
             
             if (!approved) {
@@ -176,7 +176,7 @@ jobs:
             }
 
   terraform-apply:
-    name: '🚀 Apply Production Deployment'
+    name: ' Apply Production Deployment'
     runs-on: ubuntu-latest
     needs: terraform-plan
     if: success()
@@ -185,28 +185,28 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
     
     steps:
-      - name: 📥 Checkout Code
+      - name:  Checkout Code
         uses: actions/checkout@v4
       
-      - name: 🔧 Setup Terraform
+      - name:  Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
       
-      - name: 🔐 Configure AWS Credentials
+      - name:  Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       
-      - name: 📥 Download Plan Artifact
+      - name:  Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
           name: prod-tfplan
           path: ${{ env.WORKING_DIR }}
       
-      - name: 📦 Terraform Init
+      - name:  Terraform Init
         run: |
           terraform init \
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET_PROD }}" \
@@ -215,11 +215,11 @@ jobs:
             -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE_PROD }}" \
             -backend-config="encrypt=true"
       
-      - name: 🚀 Terraform Apply
+      - name:  Terraform Apply
         id: apply
         run: terraform apply -auto-approve tfplan
       
-      - name: 🧪 Post-Deployment Validation
+      - name:  Post-Deployment Validation
         run: |
           echo "Running post-deployment validation..."
           echo "Waiting 60 seconds for services..."
@@ -230,10 +230,10 @@ jobs:
           
           if [ -n "$PUBLIC_IP" ]; then
             echo "Testing web server at http://$PUBLIC_IP"
-            curl -f http://$PUBLIC_IP && echo "✅ Health check passed" || echo "⚠️ Health check failed"
+            curl -f http://$PUBLIC_IP && echo " Health check passed" || echo " Health check failed"
           fi
       
-      - name: 🏷️ Create Deployment Tag
+      - name:  Create Deployment Tag
         uses: actions/github-script@v7
         with:
           script: |
@@ -245,25 +245,25 @@ jobs:
                 ref: `refs/tags/${tag}`,
                 sha: context.sha
               });
-              console.log(`✅ Created tag: ${tag}`);
+              console.log(` Created tag: ${tag}`);
             } catch (error) {
-              console.log(`⚠️ Could not create tag: ${error.message}`);
+              console.log(` Could not create tag: ${error.message}`);
             }
       
-      - name: 📝 Output Summary
+      - name:  Output Summary
         run: |
-          echo "## 🎉 PRODUCTION DEPLOYMENT COMPLETE" >> $GITHUB_STEP_SUMMARY
+          echo "##  PRODUCTION DEPLOYMENT COMPLETE" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Environment | Production |" >> $GITHUB_STEP_SUMMARY
-          echo "| Status | ✅ Deployed Successfully |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status |  Deployed Successfully |" >> $GITHUB_STEP_SUMMARY
           echo "| Time | $(date) |" >> $GITHUB_STEP_SUMMARY
           echo "| Triggered By | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Reason | ${{ github.event.inputs.reason || 'Push to main' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          echo "### 🌐 Deployment Outputs" >> $GITHUB_STEP_SUMMARY
+          echo "###  Deployment Outputs" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           terraform output >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No outputs found" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
