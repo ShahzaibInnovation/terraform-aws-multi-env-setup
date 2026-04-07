@@ -97,7 +97,7 @@ jobs:
             const issueBody = `
             ## PRODUCTION DEPLOYMENT REQUIRES YOUR APPROVAL
             
-            ###  WARNING: This is PRODUCTION Environment
+            ###  WARNING: This IS a PRODUCTION Environment
             
             **Environment:** Production
             **Branch:** ${{ github.ref_name }}
